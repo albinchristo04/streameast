@@ -1,0 +1,112 @@
+name: Extract WatchFooty Match Data
+
+on:
+  # Run on schedule (daily at 6 AM UTC)
+  schedule:
+    - cron: '0 6 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      days_range:
+        description: 'Number of days to fetch (past and future)'
+        required: false
+        default: '7'
+  
+  # Run on push to main (for testing)
+  push:
+    branches:
+      - main
+    paths:
+      - 'extract_matches.py'
+      - '.github/workflows/extract_matches.yml'
+
+jobs:
+  extract-data:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # Required to commit data back to repo
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+    
+    - name: Extract match data
+      env:
+        WATCHFOOTY_API_KEY: ${{ secrets.WATCHFOOTY_API_KEY }}
+        WATCHFOOTY_API_URL: ${{ secrets.WATCHFOOTY_API_URL }}
+        DAYS_RANGE: ${{ github.event.inputs.days_range || '7' }}
+        OUTPUT_FILE: matches_${{ github.run_number }}.json
+      run: |
+        python extract_matches.py
+    
+    - name: Generate summary file
+      run: |
+        echo "# Match Data Extraction Summary" > extraction_summary.md
+        echo "" >> extraction_summary.md
+        echo "**Run ID:** ${{ github.run_number }}" >> extraction_summary.md
+        echo "**Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> extraction_summary.md
+        echo "**Workflow:** ${{ github.workflow }}" >> extraction_summary.md
+        echo "" >> extraction_summary.md
+        
+        if [ -d "data" ]; then
+          echo "## Extracted Files" >> extraction_summary.md
+          echo "" >> extraction_summary.md
+          ls -lh data/ >> extraction_summary.md
+          echo "" >> extraction_summary.md
+          
+          # Count matches in the JSON file if it exists
+          if [ -f "data/matches_${{ github.run_number }}.json" ]; then
+            MATCH_COUNT=$(python -c "import json; data=json.load(open('data/matches_${{ github.run_number }}.json')); print(len(data.get('matches', [])))")
+            echo "**Total Matches Extracted:** $MATCH_COUNT" >> extraction_summary.md
+          fi
+        fi
+    
+    - name: Commit and push data
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        git add data/
+        git add extraction_summary.md
+        
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update match data - Run #${{ github.run_number }} [skip ci]"
+          git push
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: match-data-${{ github.run_number }}
+        path: |
+          data/*.json
+          extraction_summary.md
+        retention-days: 30
+    
+    - name: Create release (optional)
+      if: github.event_name == 'schedule'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: data-${{ github.run_number }}
+        name: Match Data ${{ github.run_number }}
+        body_path: extraction_summary.md
+        files: data/*.json
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
