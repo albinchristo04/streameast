@@ -19,17 +19,19 @@ class WatchFootyDataExtractor:
             base_url: Base URL for the WatchFooty API
         """
         self.api_key = api_key or os.getenv('WATCHFOOTY_API_KEY')
-        self.base_url = base_url or os.getenv('WATCHFOOTY_API_URL', 'https://www.watchfooty.st/api')
+        self.base_url = base_url or os.getenv('WATCHFOOTY_API_URL', 'https://www.watchfooty.st/api/v1')
         self.headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.api_key}' if self.api_key else ''
         }
+        if self.api_key:
+            self.headers['Authorization'] = f'Bearer {self.api_key}'
         
-    def fetch_matches(self, date=None, league=None, status=None):
+    def fetch_matches(self, sport='football', date=None, league=None, status=None):
         """
         Fetch matches from the API.
         
         Args:
+            sport: Sport type (default: 'football')
             date: Date to fetch matches for (format: YYYY-MM-DD)
             league: League ID or name to filter by
             status: Match status (live, scheduled, finished)
@@ -38,8 +40,8 @@ class WatchFootyDataExtractor:
             dict: Match data from API
         """
         try:
-            # Build API endpoint - adjust according to actual API structure
-            endpoint = f"{self.base_url}/matches"
+            # WatchFooty API endpoint structure: /api/v1/matches/{sport}
+            endpoint = f"{self.base_url}/matches/{sport}"
             
             params = {}
             if date:
@@ -64,20 +66,24 @@ class WatchFootyDataExtractor:
             
         except requests.exceptions.RequestException as e:
             print(f"Error fetching matches: {e}")
+            print(f"Response status: {response.status_code if 'response' in locals() else 'N/A'}")
+            if 'response' in locals():
+                print(f"Response body: {response.text[:500]}")
             return None
     
-    def fetch_match_details(self, match_id):
+    def fetch_match_details(self, match_id, sport='football'):
         """
         Fetch detailed information for a specific match.
         
         Args:
             match_id: ID of the match
+            sport: Sport type (default: 'football')
             
         Returns:
             dict: Detailed match data
         """
         try:
-            endpoint = f"{self.base_url}/matches/{match_id}"
+            endpoint = f"{self.base_url}/matches/{sport}/{match_id}"
             
             response = requests.get(
                 endpoint,
@@ -92,15 +98,18 @@ class WatchFootyDataExtractor:
             print(f"Error fetching match {match_id}: {e}")
             return None
     
-    def fetch_leagues(self):
+    def fetch_leagues(self, sport='football'):
         """
         Fetch available leagues.
+        
+        Args:
+            sport: Sport type (default: 'football')
         
         Returns:
             dict: Available leagues data
         """
         try:
-            endpoint = f"{self.base_url}/leagues"
+            endpoint = f"{self.base_url}/leagues/{sport}"
             
             response = requests.get(
                 endpoint,
@@ -115,12 +124,13 @@ class WatchFootyDataExtractor:
             print(f"Error fetching leagues: {e}")
             return None
     
-    def fetch_all_data(self, days_range=7):
+    def fetch_all_data(self, days_range=7, sport='football'):
         """
         Fetch comprehensive match data for a date range.
         
         Args:
             days_range: Number of days to fetch (past and future)
+            sport: Sport type (default: 'football')
             
         Returns:
             dict: Complete dataset
@@ -128,6 +138,7 @@ class WatchFootyDataExtractor:
         all_data = {
             'metadata': {
                 'extracted_at': datetime.now().isoformat(),
+                'sport': sport,
                 'date_range': {
                     'from': (datetime.now() - timedelta(days=days_range)).strftime('%Y-%m-%d'),
                     'to': (datetime.now() + timedelta(days=days_range)).strftime('%Y-%m-%d')
@@ -138,8 +149,8 @@ class WatchFootyDataExtractor:
         }
         
         # Fetch leagues
-        print("Fetching leagues...")
-        leagues_data = self.fetch_leagues()
+        print(f"Fetching {sport} leagues...")
+        leagues_data = self.fetch_leagues(sport=sport)
         if leagues_data:
             all_data['leagues'] = leagues_data
         
@@ -151,7 +162,7 @@ class WatchFootyDataExtractor:
             date_str = current_date.strftime('%Y-%m-%d')
             print(f"Fetching matches for {date_str}...")
             
-            matches = self.fetch_matches(date=date_str)
+            matches = self.fetch_matches(sport=sport, date=date_str)
             if matches:
                 # If API returns a list directly
                 if isinstance(matches, list):
@@ -159,6 +170,8 @@ class WatchFootyDataExtractor:
                 # If API returns a dict with matches key
                 elif isinstance(matches, dict) and 'matches' in matches:
                     all_data['matches'].extend(matches['matches'])
+                elif isinstance(matches, dict) and 'data' in matches:
+                    all_data['matches'].extend(matches['data'])
                 # Otherwise store the entire response
                 else:
                     all_data['matches'].append({
