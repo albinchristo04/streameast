@@ -1,337 +1,414 @@
-import asyncio
+#!/usr/bin/env python3
+"""
+scraper.py
+
+Concurrent, robust WatchFooty + SpiderEmbed extractor.
+
+Key improvements over previous version:
+ - Concurrent fetching of match details (configurable --workers)
+ - By default does NOT download image binaries (only records image endpoints).
+   Use --check-images to run cheap HEAD probes to verify images exist (fast).
+ - Resume support: if output file exists, script loads it and continues.
+ - Writes incremental results after each match processed.
+ - Better logging, retry/backoff, configurable timeouts and workers.
+
+Usage:
+  pip install requests tqdm urllib3
+  python scraper.py --base https://api.watchfooty.st --embed https://spiderembed.top \
+      --out watchfooty_full.json --referer "https://www.watchfooty.st" --rate 0.4 \
+      --timeout 15 --retries 2 --backoff 0.3 --workers 12 --check-images
+
+Notes:
+ - READ ONLY: script performs GET/HEAD requests only.
+ - Use responsibly and respect rate limits / terms of service.
+"""
+
+import argparse
 import json
+import time
+import sys
 import logging
-from datetime import datetime
+from urllib.parse import urljoin, urlparse, parse_qs
+from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Tuple, Set
-from playwright.async_api import async_playwright, Request, Browser, BrowserContext, Page
 
-# Configuration
-BASE_URL = "https://xstreameast.com/categories/nba"
-M3U8_FILE = "StreamEast.m3u8"
-LOG_FILE = "scraper.log"
-MAX_CONCURRENT_SCRAPES = 5
-REQUEST_TIMEOUT = 30000
-MAX_RETRIES = 3
+try:
+    import requests
+    from requests.exceptions import RequestException
+    from urllib3.util import Retry
+    from requests.adapters import HTTPAdapter
+except Exception as e:
+    print("Please install required libraries: pip install requests tqdm urllib3", file=sys.stderr)
+    raise
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+try:
+    from tqdm import tqdm
+except Exception:
+    tqdm = lambda x, **k: x
 
-CATEGORY_LOGOS = {
-    "StreamEast - PPV Events": "http://drewlive24.duckdns.org:9000/Logos/PPV.png",
-    "StreamEast - Soccer": "http://drewlive24.duckdns.org:9000/Logos/Football2.png",
-    "StreamEast - F1": "http://drewlive24.duckdns.org:9000/Logos/F1.png",
-    "StreamEast - Boxing": "http://drewlive24.duckdns.org:9000/Logos/Boxing-2.png",
-    "StreamEast - MMA": "http://drewlive24.duckdns.org:9000/Logos/MMA.png",
-    "StreamEast - WWE": "http://drewlive24.duckdns.org:9000/Logos/WWE.png",
-    "StreamEast - Golf": "http://drewlive24.duckdns.org:9000/Logos/Golf.png",
-    "StreamEast - Am. Football": "http://drewlive24.duckdns.org:9000/Logos/NFL4.png",
-    "StreamEast - Baseball": "http://drewlive24.duckdns.org:9000/Logos/MLB.png",
-    "StreamEast - Basketball Hub": "http://drewlive24.duckdns.org:9000/Logos/Basketball5.png",
-    "StreamEast - Hockey": "http://drewlive24.duckdns.org:9000/Logos/Hockey.png",
-    "StreamEast - WNBA": "http://drewlive24.duckdns.org:9000/Logos/WNBA.png",
-}
+# Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", stream=sys.stderr)
+logger = logging.getLogger("scraper")
 
-CATEGORY_TVG_IDS = {
-    "StreamEast - PPV Events": "PPV.EVENTS.Dummy.us",
-    "StreamEast - Soccer": "Soccer.Dummy.us",
-    "StreamEast - F1": "Racing.Dummy.us",
-    "StreamEast - Boxing": "Boxing.Dummy.us",
-    "StreamEast - MMA": "UFC.Fight.Pass.Dummy.us",
-    "StreamEast - WWE": "PPV.EVENTS.Dummy.us",
-    "StreamEast - Golf": "Golf.Dummy.us",
-    "StreamEast - Am. Football": "NFL.Dummy.us",
-    "StreamEast - Baseball": "MLB.Baseball.Dummy.us",
-    "StreamEast - Basketball Hub": "Basketball.Dummy.us",
-    "StreamEast - Hockey": "NHL.Hockey.Dummy.us",
-    "StreamEast - WNBA": "WNBA.dummy.us",
-}
+USER_AGENT = "watchfooty-extractor/1.2 (+https://github.com/)"
 
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
-def categorize_stream(url: str, title: str = "") -> str:
-    """Categorize stream based on URL and title keywords."""
-    lowered = (url + " " + title).lower()
-    
-    categories = [
-        ("wnba", "StreamEast - WNBA"),
-        (["nba", "basketball"], "StreamEast - Basketball Hub"),
-        (["nfl", "football"], "StreamEast - Am. Football"),
-        (["mlb", "baseball"], "StreamEast - Baseball"),
-        (["ufc", "mma"], "StreamEast - MMA"),
-        (["wwe", "wrestling"], "StreamEast - WWE"),
-        ("boxing", "StreamEast - Boxing"),
-        (["soccer", "futbol"], "StreamEast - Soccer"),
-        ("golf", "StreamEast - Golf"),
-        (["hockey", "nhl"], "StreamEast - Hockey"),
-        (["f1", "nascar", "motorsport"], "StreamEast - F1"),
-    ]
-    
-    for keywords, category in categories:
-        if isinstance(keywords, list):
-            if any(kw in lowered for kw in keywords):
-                return category
+def build_url(base, path):
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+    return urljoin(base.rstrip("/") + "/", path.lstrip("/"))
+
+def create_session(retries=2, backoff=0.3):
+    s = requests.Session()
+    s.headers.update({"User-Agent": USER_AGENT})
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        status_forcelist=(429, 500, 502, 503, 504),
+        backoff_factor=backoff,
+        allowed_methods=frozenset(["GET","HEAD","OPTIONS"])
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    s.mount("https://", adapter)
+    s.mount("http://", adapter)
+    return s
+
+def safe_get(session, url, headers=None, params=None, timeout=15, allow_redirects=True):
+    out = {"requested_url": url, "timestamp": now_iso(), "status_code": None, "error": None, "effective_url": None,
+           "response_json": None, "response_text": None, "response_headers": None}
+    try:
+        resp = session.get(url, headers=headers or {}, params=params or {}, timeout=timeout, allow_redirects=allow_redirects)
+        out["status_code"] = resp.status_code
+        out["effective_url"] = resp.url
+        out["response_headers"] = dict(resp.headers)
+        ctype = resp.headers.get("Content-Type","")
+        text = resp.text
+        if resp.status_code == 200 and ("application/json" in ctype or text.strip().startswith("{") or text.strip().startswith("[")):
+            try:
+                out["response_json"] = resp.json()
+            except Exception as je:
+                out["error"] = "json_decode_error: " + str(je)
+                out["response_text"] = text[:20000]
         else:
-            if keywords in lowered:
-                return category
-    
-    return "StreamEast - PPV Events"
+            out["response_text"] = text[:20000]
+    except RequestException as e:
+        out["error"] = str(e)
+    return out
 
-
-async def safe_goto(page: Page, url: str, tries: int = MAX_RETRIES, timeout: int = REQUEST_TIMEOUT) -> bool:
-    """Safely navigate to URL with retries and Cloudflare detection."""
-    for attempt in range(tries):
-        try:
-            logger.info(f"Navigating to {url} (attempt {attempt + 1}/{tries})")
-            await page.goto(url, timeout=timeout, wait_until="domcontentloaded")
-            
-            # Check for Cloudflare challenge
-            html = await page.content()
-            if any(x in html.lower() for x in ["cloudflare", "just a moment", "attention required"]):
-                logger.warning(f"Cloudflare challenge detected on {url}, waiting...")
-                await asyncio.sleep(3 + attempt)
-                continue
-            
-            logger.info(f"Successfully loaded {url}")
-            return True
-            
-        except asyncio.TimeoutError:
-            logger.warning(f"Timeout loading {url} (attempt {attempt + 1}/{tries})")
-        except Exception as e:
-            logger.error(f"Error loading {url}: {e}")
-        
-        if attempt < tries - 1:
-            await asyncio.sleep(2 * (attempt + 1))
-    
-    logger.error(f"Failed to load {url} after {tries} attempts")
-    return False
-
-
-async def get_event_links(page: Page) -> List[str]:
-    """Gather all event links from the main page."""
-    logger.info("Gathering event links from main page...")
-    
-    if not await safe_goto(page, BASE_URL):
-        logger.error("Failed to load main page")
-        return []
-    
+def safe_head(session, url, headers=None, timeout=6):
+    out = {"requested_url": url, "timestamp": now_iso(), "status_code": None, "error": None, "effective_url": None, "response_headers": None}
     try:
-        links = await page.evaluate("""() => {
-            return Array.from(document.querySelectorAll('a'))
-                .map(a => a.href)
-                .filter(h => {
-                    const sports = ['nba', 'mlb', 'ufc', 'f1', 'soccer', 'wnba', 
-                                   'boxing', 'wwe', 'nfl', 'nhl', 'golf', 'mma'];
-                    return sports.some(sport => h.includes('/' + sport));
-                });
-        }""")
-        
-        unique_links = list(set(links))
-        logger.info(f"Found {len(unique_links)} unique event links")
-        return unique_links
-        
-    except Exception as e:
-        logger.error(f"Error extracting links: {e}")
-        return []
+        resp = session.head(url, headers=headers or {}, timeout=timeout, allow_redirects=True)
+        out["status_code"] = resp.status_code
+        out["effective_url"] = resp.url
+        out["response_headers"] = dict(resp.headers)
+    except RequestException as e:
+        out["error"] = str(e)
+    return out
 
+def resolve_spider_embed(session, embed_host, stream_url, referer=None, timeout=12):
+    """
+    Try to resolve spiderembed tokens using /api/get?id= or /api/get?url=
+    Return a dict with original_url, resolved(bool), api_probe, discovered_streams(list)
+    """
+    res = {"original_url": stream_url, "resolved": False, "api_probe": None, "discovered_streams": []}
+    if not stream_url:
+        return res
+    low = stream_url.lower()
+    if any(ext in low for ext in [".m3u8", ".mp4", ".m3u", "videoplayback"]):
+        res["resolved"] = True
+        res["discovered_streams"] = [{"label":"direct","url":stream_url}]
+        return res
 
-async def scrape_stream_url(context: BrowserContext, url: str) -> Tuple[str, List[str]]:
-    """Scrape M3U8 stream URL from event page."""
-    m3u8_links: Set[str] = set()
-    event_name = "Unknown Event"
-    page = await context.new_page()
-    
-    def capture_request(request: Request):
-        """Capture M3U8 requests."""
-        req_url = request.url.lower()
-        if ".m3u8" in req_url and "master" not in req_url:
-            if request.url not in m3u8_links:
-                logger.info(f"🎯 Captured stream: {request.url}")
-                m3u8_links.add(request.url)
-    
-    page.on("request", capture_request)
-    
-    try:
-        if not await safe_goto(page, url):
-            return event_name, []
-        
-        # Wait for page to stabilize
-        await asyncio.sleep(1.5)
-        
-        # Extract event name
-        event_name = await page.evaluate("""
-            () => {
-                const selectors = ['h1', '.event-title', '.title', '.stream-title', 'h2'];
-                for (let sel of selectors) {
-                    const el = document.querySelector(sel);
-                    if (el && el.textContent.trim()) {
-                        return el.textContent.trim();
-                    }
-                }
-                const title = document.title.trim();
-                return title.split('|')[0].trim() || title;
-            }
-        """)
-        
-        logger.info(f"Event: {event_name}")
-        
-        # Try to trigger video player
-        try:
-            # Click on potential player areas
-            await page.mouse.click(500, 400)
-            await asyncio.sleep(0.5)
-            
-            # Try clicking play button if exists
-            await page.evaluate("""
-                () => {
-                    const playButtons = document.querySelectorAll('button, .play-button, .vjs-big-play-button');
-                    playButtons.forEach(btn => btn.click());
-                }
-            """)
-        except Exception as e:
-            logger.debug(f"Error triggering player: {e}")
-        
-        # Wait for stream to load
-        for i in range(15):
-            if m3u8_links:
-                break
-            await asyncio.sleep(0.5)
-        
-        if not m3u8_links:
-            logger.warning(f"No stream found for {event_name}")
-        
-    except Exception as e:
-        logger.error(f"Error scraping {url}: {e}")
-    finally:
-        await page.close()
-    
-    return event_name, list(m3u8_links)
+    parsed = urlparse(stream_url)
+    q = parse_qs(parsed.query)
+    headers = {"User-Agent": USER_AGENT}
+    if referer:
+        headers["Referer"] = referer
 
+    try_hosts = []
+    if parsed.netloc and ("spiderembed" in parsed.netloc or "spider" in parsed.netloc):
+        try_hosts.append(f"{parsed.scheme}://{parsed.netloc}")
+    if embed_host:
+        try_hosts.append(embed_host.rstrip("/"))
 
-async def scrape_batch(context: BrowserContext, links: List[str], start_idx: int) -> List[Tuple[str, str, List[str]]]:
-    """Scrape a batch of links concurrently."""
-    results = []
-    tasks = []
-    
-    for idx, link in enumerate(links, start=start_idx):
-        logger.info(f"[{idx}/{start_idx + len(links) - 1}] Processing: {link}")
-        task = scrape_stream_url(context, link)
-        tasks.append((idx, link, task))
-    
-    completed = await asyncio.gather(*[t[2] for t in tasks], return_exceptions=True)
-    
-    for (idx, link, _), result in zip(tasks, completed):
-        if isinstance(result, Exception):
-            logger.error(f"Failed to scrape {link}: {result}")
+    candidate_ids = []
+    if "id" in q:
+        candidate_ids += q.get("id",[])
+    if "token" in q:
+        candidate_ids += q.get("token",[])
+    path_parts = [p for p in parsed.path.split("/") if p]
+    if path_parts:
+        candidate_ids.append(path_parts[-1])
+
+    for host in try_hosts:
+        api_get = build_url(host, "/api/get")
+        # try id-based
+        for cid in candidate_ids:
+            probe_url = api_get + "?id=" + cid
+            probe = safe_get(session, probe_url, headers=headers, timeout=timeout)
+            res["api_probe"] = probe
+            if probe.get("status_code")==200 and probe.get("response_json"):
+                j = probe["response_json"]
+                streams = []
+                if isinstance(j, dict):
+                    if "streams" in j and isinstance(j["streams"], list):
+                        streams = j["streams"]
+                    elif "resolvedUrl" in j:
+                        streams = [{"label":"resolved","url":j.get("resolvedUrl")}]
+                    elif "url" in j:
+                        streams = [{"label":"resolved","url":j.get("url")}]
+                if streams:
+                    res["resolved"] = True
+                    res["discovered_streams"] = streams
+                    return res
+        # try url param
+        probe = safe_get(session, api_get, headers=headers, params={"url": stream_url}, timeout=timeout)
+        res["api_probe"] = probe
+        if probe.get("status_code")==200 and probe.get("response_json"):
+            j = probe["response_json"]
+            streams = []
+            if isinstance(j, dict):
+                if "streams" in j and isinstance(j["streams"], list):
+                    streams = j["streams"]
+                elif "resolvedUrl" in j:
+                    streams = [{"label":"resolved","url":j.get("resolvedUrl")}]
+                elif "url" in j:
+                    streams = [{"label":"resolved","url":j.get("url")}]
+            if streams:
+                res["resolved"] = True
+                res["discovered_streams"] = streams
+                return res
+    return res
+
+def fetch_matches_for_sport(session, base_api, sport, timeout, rate_delay):
+    matches_url = build_url(base_api, f"/api/v1/matches/{sport}")
+    time.sleep(rate_delay)
+    return safe_get(session, matches_url, timeout=timeout)
+
+def fetch_match_detail(session, base_api, match_id, timeout, rate_delay):
+    time.sleep(rate_delay)
+    url = build_url(base_api, f"/api/v1/match/{match_id}")
+    return safe_get(session, url, timeout=timeout)
+
+def process_match(session, base_api, embed_host, m_basic, timeout, rate_delay, referer_base, check_images):
+    """
+    Fetch match details, collect poster/logo endpoints, optionally check images (HEAD),
+    resolve streams (SpiderEmbed) with a short timeout.
+    Returns enriched match object.
+    """
+    match_id = m_basic.get("matchId") or m_basic.get("id") or m_basic.get("match_id")
+    out = {"basic": m_basic, "match_probe": None, "poster_probe": None, "team_logos": {}, "league_logo": None, "embed_resolutions": [], "match_id": match_id}
+    if not match_id:
+        out["error"] = "missing_match_id"
+        return out
+
+    # match detail
+    match_url = build_url(base_api, f"/api/v1/match/{match_id}")
+    r = safe_get(session, match_url, timeout=timeout)
+    out["match_probe"] = r
+
+    # prefer IDs from either basic or match detail
+    # poster id
+    poster_id = None
+    if isinstance(m_basic, dict):
+        poster_id = m_basic.get("poster") or m_basic.get("posterId") or m_basic.get("poster_id")
+    # also check match detail body
+    match_json = r.get("response_json") or {}
+    if not poster_id and isinstance(match_json, dict):
+        poster_id = match_json.get("poster") or match_json.get("posterId") or match_json.get("poster_id")
+    if poster_id:
+        poster_url = build_url(base_api, f"/api/v1/poster/{poster_id}")
+        out["poster_probe"] = {"url": poster_url}
+        if check_images:
+            out["poster_probe"]["head"] = safe_head(session, poster_url, timeout=min(6, timeout))
+
+    # team logos
+    teams = m_basic.get("teams") if isinstance(m_basic, dict) else None
+    if isinstance(match_json, dict) and not teams:
+        teams = match_json.get("teams")
+    if teams and isinstance(teams, dict):
+        for side in ("home","away"):
+            t = teams.get(side)
+            if t and isinstance(t, dict):
+                lid = t.get("logoId") or t.get("logo_id") or t.get("logo")
+                if lid:
+                    logo_url = build_url(base_api, f"/api/v1/team-logo/{lid}")
+                    out["team_logos"][side] = {"url": logo_url}
+                    if check_images:
+                        out["team_logos"][side]["head"] = safe_head(session, logo_url, timeout=min(6, timeout))
+
+    # league logo
+    league_logo_id = None
+    if isinstance(m_basic, dict):
+        league_logo_id = m_basic.get("leagueLogoId") or m_basic.get("league_logo_id") or m_basic.get("leagueLogo")
+    if not league_logo_id and isinstance(match_json, dict):
+        league_logo_id = match_json.get("leagueLogoId") or match_json.get("league_logo_id") or match_json.get("leagueLogo")
+    if league_logo_id:
+        ll_url = build_url(base_api, f"/api/v1/league-logo/{league_logo_id}")
+        out["league_logo"] = {"url": ll_url}
+        if check_images:
+            out["league_logo"]["head"] = safe_head(session, ll_url, timeout=min(6, timeout))
+
+    # streams: check match detail 'streams' or basic streams
+    streams = []
+    if isinstance(match_json, dict):
+        streams = match_json.get("streams") or match_json.get("sources") or m_basic.get("streams") or []
+    else:
+        streams = m_basic.get("streams") if isinstance(m_basic, dict) else []
+
+    for s in streams:
+        stream_url = None
+        if isinstance(s, str):
+            stream_url = s
+        elif isinstance(s, dict):
+            stream_url = s.get("url") or s.get("resolvedUrl") or s.get("source")
+        if not stream_url:
             continue
-        
-        name, streams = result
-        if streams:
-            results.append((link, name, streams))
-    
-    return results
+        resolved = resolve_spider_embed(session, embed_host, stream_url, referer=referer_base, timeout=min(12, timeout))
+        out["embed_resolutions"].append({"stream_meta": s, "resolution": resolved})
 
+    return out
 
-def write_m3u8_file(results: List[Tuple[str, str, List[str]]]) -> None:
-    """Write results to M3U8 file."""
-    logger.info(f"Writing {len(results)} streams to {M3U8_FILE}")
-    
+def load_existing_output(path):
+    if not Path(path).exists():
+        return None
     try:
-        with open(M3U8_FILE, "w", encoding="utf-8") as f:
-            f.write(f"# Updated at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n")
-            f.write(f"# Total streams: {sum(len(streams) for _, _, streams in results)}\n")
-            f.write("#EXTM3U\n\n")
-            
-            stream_count = 0
-            for link, name, streams in results:
-                category = categorize_stream(link, name)
-                logo = CATEGORY_LOGOS.get(category, "")
-                tvg_id = CATEGORY_TVG_IDS.get(category, "")
-                
-                for stream_url in streams:
-                    stream_count += 1
-                    f.write(f'#EXTINF:-1 tvg-id="{tvg_id}" tvg-logo="{logo}" group-title="{category}",{name}\n')
-                    f.write('#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0\n')
-                    f.write('#EXTVLCOPT:http-origin=https://streamscenter.online\n')
-                    f.write('#EXTVLCOPT:http-referrer=https://streamscenter.online/\n')
-                    f.write(f'{stream_url}\n\n')
-        
-        logger.info(f"✅ Successfully wrote {stream_count} streams to {M3U8_FILE}")
-        
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception as e:
-        logger.error(f"Error writing M3U8 file: {e}")
-        raise
+        logger.warning("Failed to load existing output file: %s", e)
+        return None
 
+def write_output_atomic(path, data):
+    tmp = Path(path).with_suffix(".partial.json")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    tmp.replace(path)
 
-async def main():
-    """Main execution function."""
-    start_time = datetime.now()
-    logger.info("=" * 80)
-    logger.info("StreamEast Scraper Started")
-    logger.info("=" * 80)
-    
+def main():
+    p = argparse.ArgumentParser(prog="scraper", description="Concurrent WatchFooty + SpiderEmbed extractor")
+    p.add_argument("--base", dest="base_api", default="https://api.watchfooty.st", help="Base API host")
+    p.add_argument("--embed", dest="embed_host", default="https://spiderembed.top", help="Embed provider host")
+    p.add_argument("--out", dest="out_file", default="watchfooty_full.json", help="Output JSON file")
+    p.add_argument("--sport", dest="sports", action="append", help="Specific sport slug to scan (e.g., football)")
+    p.add_argument("--rate", "--rate-delay", dest="rate_delay", type=float, default=0.4, help="Delay seconds between requests (alias --rate-delay)")
+    p.add_argument("--referer", dest="referer", help="Referer header to use for embed resolution (match page URL)")
+    p.add_argument("--timeout", dest="timeout", type=float, default=15, help="Per-request timeout in seconds")
+    p.add_argument("--retries", dest="retries", type=int, default=2, help="Number of retries for transient errors")
+    p.add_argument("--backoff", dest="backoff", type=float, default=0.3, help="Backoff factor for retries")
+    p.add_argument("--workers", dest="workers", type=int, default=8, help="Number of concurrent worker threads for match detail fetches")
+    p.add_argument("--check-images", dest="check_images", action="store_true", help="Perform HEAD checks for poster/team/league images (fast). Off by default.")
+    p.add_argument("--resume", dest="resume", action="store_true", help="Resume from existing output file if present.")
+    args = p.parse_args()
+
+    session = create_session(retries=args.retries, backoff=args.backoff)
+    session.headers.update({"User-Agent": USER_AGENT})
+
+    out_file = args.out_file
+    existing = load_existing_output(out_file) if args.resume else None
+    output = {
+        "scanned_at": now_iso(),
+        "base_api": args.base_api,
+        "embed_host": args.embed_host,
+        "sports": [],
+        "matches": {},
+        "errors": []
+    }
+    processed_match_ids = set()
+    if existing:
+        logger.info("Resuming from existing output: %s", out_file)
+        output = existing
+        # collect already processed match ids to skip
+        for sport_block in output.get("matches", {}).values():
+            items = sport_block.get("items", [])
+            for it in items:
+                # if we have 'match_id' field in enriched entry
+                if isinstance(it, dict) and it.get("match_id"):
+                    processed_match_ids.add(str(it.get("match_id")))
+                else:
+                    # fallback: check basic.matchId
+                    basic = it.get("basic") if isinstance(it, dict) else None
+                    if isinstance(basic, dict):
+                        mid = basic.get("matchId") or basic.get("id") or basic.get("match_id")
+                        if mid:
+                            processed_match_ids.add(str(mid))
+
     try:
-        async with async_playwright() as p:
-            # Launch browser
-            logger.info("Launching browser...")
-            browser = await p.firefox.launch(
-                headless=True,
-                args=['--disable-blink-features=AutomationControlled']
-            )
-            
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
-                viewport={'width': 1920, 'height': 1080},
-                locale='en-US'
-            )
-            
-            # Get event links
-            main_page = await context.new_page()
-            links = await get_event_links(main_page)
-            await main_page.close()
-            
-            if not links:
-                logger.warning("No links found, exiting...")
-                await browser.close()
-                return
-            
-            # Process links in batches
-            all_results = []
-            for i in range(0, len(links), MAX_CONCURRENT_SCRAPES):
-                batch = links[i:i + MAX_CONCURRENT_SCRAPES]
-                logger.info(f"\nProcessing batch {i//MAX_CONCURRENT_SCRAPES + 1}/{(len(links)-1)//MAX_CONCURRENT_SCRAPES + 1}")
-                results = await scrape_batch(context, batch, i + 1)
-                all_results.extend(results)
-                
-                # Rate limiting
-                if i + MAX_CONCURRENT_SCRAPES < len(links):
-                    await asyncio.sleep(1)
-            
-            # Write results
-            if all_results:
-                write_m3u8_file(all_results)
-            else:
-                logger.warning("No streams found to write")
-            
-            await browser.close()
-            
+        # 1) fetch sports
+        logger.info("Fetching sports list...")
+        sports_url = build_url(args.base_api, "/api/v1/sports")
+        sres = safe_get(session, sports_url, timeout=args.timeout)
+        output["sports_probe"] = sres
+        sports = []
+        if sres.get("response_json") and isinstance(sres["response_json"], list):
+            sports = sres["response_json"]
+            output["sports"] = sports
+        else:
+            output["errors"].append({"stage":"sports","detail":sres})
+        slugs = args.sports if args.sports else [s.get("name") for s in sports if s.get("name")]
+
+        # 2) fetch matches per sport (sequential; each returned block will be processed concurrently)
+        logger.info("Fetching matches for %d sports...", len(slugs))
+        for sport in slugs:
+            logger.info("Fetching matches for sport: %s", sport)
+            mres = fetch_matches_for_sport(session, args.base_api, sport, timeout=args.timeout, rate_delay=args.rate_delay)
+            output.setdefault("matches", {})
+            # if res returned a list, populate items; if already present from resume keep existing items list
+            items = []
+            if mres.get("response_json") and isinstance(mres["response_json"], list):
+                items = mres["response_json"]
+            output["matches"][sport] = {"probe": mres, "items": items if not existing else output["matches"].get(sport, {}).get("items", items)}
+
+        # 3) prepare list of all basic match objects to process (skip already processed)
+        to_process = []
+        for sport, block in output.get("matches", {}).items():
+            items = block.get("items") or []
+            for m in items:
+                mid = m.get("matchId") or m.get("id") or m.get("match_id")
+                if mid and str(mid) in processed_match_ids:
+                    continue
+                to_process.append((sport, m))
+
+        logger.info("Total matches to process: %d (workers=%d)", len(to_process), args.workers)
+
+        # 4) concurrent processing of matches
+        with ThreadPoolExecutor(max_workers=args.workers) as ex:
+            future_to_match = {}
+            for sport, m in to_process:
+                future = ex.submit(process_match, session, args.base_api, args.embed_host, m, args.timeout, args.rate_delay, args.referer, args.check_images)
+                future_to_match[future] = (sport, m)
+
+            for fut in tqdm(as_completed(future_to_match), total=len(future_to_match), desc="processing matches"):
+                sport, basic = future_to_match[fut]
+                try:
+                    enriched = fut.result()
+                except Exception as e:
+                    logger.exception("Exception processing match: %s", e)
+                    enriched = {"basic": basic, "error": str(e)}
+                # append to output (find right sport block)
+                output.setdefault("matches", {})
+                output.setdefault("matches", {}).setdefault(sport, {"probe": output["matches"].get(sport, {}).get("probe"), "items": output["matches"].get(sport, {}).get("items", [])})
+                output["matches"][sport]["items"].append(enriched)
+                # write incrementally
+                write_output_atomic(out_file, output)
+
+    except KeyboardInterrupt:
+        logger.warning("Interrupted by user. Saving partial results to %s", out_file)
     except Exception as e:
-        logger.error(f"Fatal error: {e}", exc_info=True)
-        raise
-    
+        logger.exception("Unhandled exception: %s", e)
+        output.setdefault("errors", []).append({"stage":"exception","detail":str(e)})
     finally:
-        elapsed = datetime.now() - start_time
-        logger.info("=" * 80)
-        logger.info(f"Scraper completed in {elapsed.total_seconds():.2f} seconds")
-        logger.info("=" * 80)
-
+        output["finished_at"] = now_iso()
+        try:
+            write_output_atomic(out_file, output)
+            logger.info("Final output written to %s", out_file)
+        except Exception as e:
+            logger.exception("Failed to write final output: %s", e)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

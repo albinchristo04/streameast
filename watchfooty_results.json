@@ -1,0 +1,614 @@
+{
+  "started_at": "2025-12-04T06:30:44.753194Z",
+  "base_api": "https://api.watchfooty.st",
+  "embed_host": "https://spiderembed.top",
+  "probes": [
+    {
+      "probe_name": "sports",
+      "path": "/api/v1/sports",
+      "note": "documented",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/sports",
+        "effective_url": "https://api.watchfooty.st/api/v1/sports",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:44.753356Z",
+        "status_code": 200,
+        "elapsed_seconds": 1.8391973972320557,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:45 GMT",
+          "Content-Type": "application/json;charset=utf-8",
+          "Content-Length": "296",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "Content-Encoding": "gzip",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=b3TDMWQD%2FgdSCuAexFHscim35hg2nLzJkj2oSIQIlbAvHpRFJZJPKe1%2Fti5jQ80ihHQyWZz%2B0u9g8n8GV6gEXC3x5qYSRYK8HPRGMg0rP6kE\"}]}",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941c1cdd78ae4-MAA"
+        },
+        "response_json": [
+          {
+            "name": "football",
+            "displayName": "Football",
+            "cutoffDate": "2023-05-10T00:00:00"
+          },
+          {
+            "name": "hockey",
+            "displayName": "Hockey",
+            "cutoffDate": "2025-04-18T00:00:00"
+          },
+          {
+            "name": "baseball",
+            "displayName": "Baseball",
+            "cutoffDate": "2025-04-18T00:00:00"
+          },
+          {
+            "name": "basketball",
+            "displayName": "Basketball",
+            "cutoffDate": "2025-04-18T00:00:00"
+          },
+          {
+            "name": "racing",
+            "displayName": "Racing",
+            "cutoffDate": "2025-04-18T00:00:00"
+          },
+          {
+            "name": "fighting",
+            "displayName": "Fighting",
+            "cutoffDate": "2025-05-17T00:00:00"
+          },
+          {
+            "name": "rugby",
+            "displayName": "Rugby",
+            "cutoffDate": "2025-05-03T00:00:00"
+          },
+          {
+            "name": "tennis",
+            "displayName": "Tennis",
+            "cutoffDate": "2025-06-02T00:00:00"
+          },
+          {
+            "name": "cricket",
+            "displayName": "Cricket",
+            "cutoffDate": "2025-06-16T00:00:00"
+          },
+          {
+            "name": "volleyball",
+            "displayName": "Volleyball",
+            "cutoffDate": "2025-07-15T00:00:00"
+          },
+          {
+            "name": "american-football",
+            "displayName": "American Football",
+            "cutoffDate": "2025-07-02T00:00:00"
+          },
+          {
+            "name": "australian-football",
+            "displayName": "Australian Football",
+            "cutoffDate": "2025-08-06T00:00:00"
+          },
+          {
+            "name": "darts",
+            "displayName": "Darts",
+            "cutoffDate": "2025-10-09T00:00:00"
+          },
+          {
+            "name": "golf",
+            "displayName": "Golf",
+            "cutoffDate": "2025-08-09T00:00:00"
+          }
+        ],
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "matches_by_sport",
+      "path": "/api/v1/matches/{sport}",
+      "note": "documented, requires sport",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/matches/{sport}",
+        "effective_url": "https://api.watchfooty.st/api/v1/matches/%7Bsport%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:47.093286Z",
+        "status_code": 200,
+        "elapsed_seconds": 0.34037327766418457,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:46 GMT",
+          "Content-Type": "application/json;charset=utf-8",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=mbm4JMrXD78keyzIACEgltq2%2BLNiIjqPU52KW0YfxawILmymGoSGv62WAN%2Bh7bzFZ%2Bl5oCX4WC%2BE%2FVA%2BWUpX2wzomc0uymYwLM8Poi1siADb\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941ccc8f28ae4-MAA"
+        },
+        "response_json": [],
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "match_details",
+      "path": "/api/v1/match/{matchId}",
+      "note": "documented, requires matchId",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/match/{matchId}",
+        "effective_url": "https://api.watchfooty.st/api/v1/match/%7BmatchId%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:47.934247Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.34120821952819824,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:47 GMT",
+          "Content-Type": "application/json;charset=utf-8",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=SA3CWKVN5aZrlmBPhHxBMOjMikwLMlDIHZWUkJOHW%2B9siPRDdBDlXFl%2BayE5QHRAG5gyAl1lleAhvVrHAQ59%2BxbHoJr4wgoOoEfugbWa4Fpa\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941d20e818ae4-MAA"
+        },
+        "response_json": {
+          "error": "Match not found"
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "poster",
+      "path": "/api/v1/poster/{id}",
+      "note": "documented, image asset",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/poster/{id}",
+        "effective_url": "https://api.watchfooty.st/api/v1/poster/%7Bid%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:48.776217Z",
+        "status_code": 404,
+        "elapsed_seconds": 1.9310007095336914,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:50 GMT",
+          "Content-Type": "application/json;charset=utf-8",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "Cache-Control": "max-age=3000",
+          "cf-cache-status": "MISS",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=67UviI6Yf6x39FxyssKBwdCzARh6pSmhEy4yR2cZlvquzxIxrmPsktGSzyxj2xBvOB5pL2wcLK8ygdU0D3t35ubfPiODhlYGaCUoXA0dz4Fe\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941d74c0f8ae4-MAA"
+        },
+        "response_json": {
+          "error": "Match not found"
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "team_logo",
+      "path": "/api/v1/team-logo/{id}",
+      "note": "documented, image asset",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/team-logo/{id}",
+        "effective_url": "https://api.watchfooty.st/api/v1/team-logo/%7Bid%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:51.207890Z",
+        "status_code": 500,
+        "elapsed_seconds": 1.8828392028808594,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:52 GMT",
+          "Content-Type": "application/json",
+          "Content-Length": "46",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "BYPASS",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=%2B78Oz6TBp9O9jT5s6DuW%2FaVkEusuI1v8DpAVj4Gc%2B9w8HDNrJNOfSJ19U3H91kM0qinJoGoZKrdRY64xnGAUEFyhMl4gXms%2BtAcvkVS1my30\"}]}",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941e678778ae4-MAA"
+        },
+        "response_json": {
+          "error": "Internal Server Error",
+          "status": 500
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "league_logo",
+      "path": "/api/v1/league-logo/{id}",
+      "note": "documented, image asset",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/league-logo/{id}",
+        "effective_url": "https://api.watchfooty.st/api/v1/league-logo/%7Bid%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:53.591284Z",
+        "status_code": 500,
+        "elapsed_seconds": 1.2333598136901855,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:54 GMT",
+          "Content-Type": "application/json",
+          "Content-Length": "46",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "BYPASS",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=oO0Ky9GlKeXObUa4zOp3IY18ni1QBU3KrJuJEaVhxQclXgmh7ulr7cPzJJXWjbtlMi35r7ZuXR0mY30ZBXeisz8%2FRVBW9Dj91Pbo%2BYVN1mWT\"}]}",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8941f55d828ae4-MAA"
+        },
+        "response_json": {
+          "error": "Internal Server Error",
+          "status": 500
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "match_events",
+      "path": "/api/v1/match-events/{matchId}",
+      "note": "inferred: play-by-play events",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/match-events/{matchId}",
+        "effective_url": "https://api.watchfooty.st/api/v1/match-events/%7BmatchId%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:55.325463Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.3280830383300781,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:55 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=Ybr%2FzERrqP7%2BNS2OFueGwQb%2B52yx9PUWNa9dfCGUSDZxgghDKrCQ%2FGOW4%2FtfyQfHfwP%2B8VXkSNJa%2BxWPOwKw9uQEAmpkXnUqPfZGKeJvfwNb\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a894200396a8ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/match-events/%7BmatchId%7D - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "match_comments",
+      "path": "/api/v1/match-comments/{matchId}",
+      "note": "inferred: comments/chat",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/match-comments/{matchId}",
+        "effective_url": "https://api.watchfooty.st/api/v1/match-comments/%7BmatchId%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:56.154079Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.3339958190917969,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:55 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=JoeccFTsnvEf8mwxtcPu9LxDrv5K4l9srXiQjMI9Yi2bbGI5CM0OLtR3R8k7%2FQJ7JlGIshd90Xp0V2jmdhz3pr8IgrhpMkdpRo1U8TROmIzu\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a8942056e118ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/match-comments/%7BmatchId%7D - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "stream_status",
+      "path": "/api/v1/stream-status/{streamId}",
+      "note": "inferred: per-stream health",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/stream-status/{streamId}",
+        "effective_url": "https://api.watchfooty.st/api/v1/stream-status/%7BstreamId%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:56.988636Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.32816457748413086,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:56 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=11t29cyfGmH1Shzi1ooeUJl0OMzaePsOfYGggm0RqRWwSxO%2BMFX5JqXajHN98dTvddx5twpLI1luf%2FoPq6fiJUvLR%2BMsj2SepkXERoitmWDI\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89420a9adc8ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/stream-status/%7BstreamId%7D - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "search",
+      "path": "/api/v1/search",
+      "note": "inferred: q and sport query params",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/search",
+        "effective_url": "https://api.watchfooty.st/api/v1/search",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:57.817393Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.32651782035827637,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:57 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=00Q64Fzoq2oR%2FZMzYiR1DRqPp0Rm%2FrI08EcPuJfmrEyS0yLoi3VlbXp2bq8i2YqayEGrATqneEZBx5orvm%2FM%2Fo1cmm6jse0EKiDuIdrbyKRv\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89420fcfce8ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/search - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "schedule",
+      "path": "/api/v1/schedule/{league}",
+      "note": "inferred: fixtures by league/date",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/schedule/{league}",
+        "effective_url": "https://api.watchfooty.st/api/v1/schedule/%7Bleague%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:58.644587Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.3289165496826172,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:58 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=a2T4M4XNN6kp3TZTA3An8xtk%2Feup6aqzNzcIKfdeK70e0mNnQ7WDIPwz5dQfpAwbCRCyHOfvYtj1QyQgadDtgrKoazbYZgatf78WsBIzOBQ1\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a894214fc738ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/schedule/%7Bleague%7D - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "history_match",
+      "path": "/api/v1/history/match/{matchId}",
+      "note": "inferred: archived match data",
+      "result": {
+        "requested_url": "https://api.watchfooty.st/api/v1/history/match/{matchId}",
+        "effective_url": "https://api.watchfooty.st/api/v1/history/match/%7BmatchId%7D",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:30:59.474256Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.3280653953552246,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:30:59 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "access-control-allow-headers": "*",
+          "access-control-allow-methods": "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+          "access-control-allow-origin": "*",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "vary": "Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=uuOioBJKtsjlAM0Fy93CUJjJwZqUoj5BIlRiCJ%2FecWkfL8uSXV8OtCkBPdXAYdEBb5hfSGo2j17bPgRxV4jGF6aEsJbw115e4koncy6Ve%2BWs\"}]}",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89421a281d8ae4-MAA"
+        },
+        "response_json": {
+          "error": "GET /api/v1/history/match/%7BmatchId%7D - NOT_FOUND",
+          "status": 404
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "spider_root",
+      "path": "EMBED:/",
+      "note": "health/name/version",
+      "result": {
+        "requested_url": "https://spiderembed.top/",
+        "effective_url": "https://spiderembed.top/",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:31:00.302780Z",
+        "status_code": 200,
+        "elapsed_seconds": 1.3296053409576416,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:31:01 GMT",
+          "Content-Type": "text/html; charset=utf-8",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "Cache-Control": "s-maxage=31536000",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=vJm%2FUwhKniB5%2BZCrQGCyjR7VOu6wMgBMN%2BG6Y5Yr4Sc9YOo4AMFRxZ%2F9BnTU9DGYH1%2F0613sYje6gZVqlriUOWZ%2Fw%2BbrSCdZYa6j9BtteA%3D%3D\"}]}",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "vary": "Accept-Encoding, rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+          "x-nextjs-cache": "HIT",
+          "x-nextjs-prerender": "1, 1",
+          "x-nextjs-stale-time": "300",
+          "x-powered-by": "Next.js",
+          "cf-cache-status": "DYNAMIC",
+          "Content-Encoding": "gzip",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89422209290553-MAA"
+        },
+        "response_json": null,
+        "response_text": "<!DOCTYPE html><!--xPy8vw1RMOGcdY66qvf4G--><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" href=\"/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"stylesheet\" href=\"/_next/static/chunks/9819c8aa4c7528f0.css\" data-precedence=\"next\"/><link rel=\"preload\" as=\"script\" fetchPriority=\"low\" href=\"/_next/static/chunks/48efc38250af6025.js\"/><script src=\"/_next/static/chunks/24ef7e7fa7eda36c.js\" async=\"\"></script><script src=\"/_next/static/chunks/5209b521ac039d2a.js\" async=\"\"></script><script src=\"/_next/static/chunks/turbopack-db9c55a42335130d.js\" async=\"\"></script><script src=\"/_next/static/chunks/7ef59da13d8da32d.js\" async=\"\"></script><script src=\"/_next/static/chunks/1e0c342a4c4b4154.js\" async=\"\"></script><link rel=\"preload\" href=\"/api/spider/bundle_fd1360b4fa59c098c3c1d64b37d424e7.js\" as=\"script\"/><link rel=\"preload\" href=\"https://a.watchfty.link/js/script.js\" as=\"script\"/><meta name=\"next-size-adjust\" content=\"\"/><title>Spider Embed</title><meta name=\"description\" content=\"Embed\"/><link rel=\"manifest\" href=\"/manifest.webmanifest\"/><script src=\"/_next/static/chunks/a6dad97d9634a72d.js\" noModule=\"\"></script></head><body class=\"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased\"><div hidden=\"\"><!--$--><!--/$--></div><script>(self.__next_s=self.__next_s||[]).push([\"/api/spider/bundle_fd1360b4fa59c098c3c1d64b37d424e7.js\",{\"id\":\"init\"}])</script><div class=\"p-5\"><pre>{\n  &quot;name&quot;: &quot;Spider - Embed&quot;,\n  &quot;version&quot;: &quot;1.0.0&quot;\n}</pre></div><!--$--><!--/$--><script src=\"/_next/static/chunks/48efc38250af6025.js\" id=\"_R_\" async=\"\"></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\n2:I[19221,[\\\"/_next/static/chunks/7ef59da13d8da32d.js\\\"],\\\"\\\"]\\n3:I[90949,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"default\\\"]\\n4:I[9318,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"default\\\"]\\n5:I[49676,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"OutletBoundary\\\"]\\n6:\\\"$Sreact.suspense\\\"\\n8:I[49676,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"ViewportBoundary\\\"]\\na:I[49676,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"MetadataBoundary\\\"]\\nc:I[94534,[\\\"/_next/static/chunks/1e0c342a4c4b4154.js\\\"],\\\"default\\\"]\\n:HL[\\\"/_next/static/chunks/9819c8aa4c7528f0.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n\"])</script><script>self.__next_f.push([1,\"0:{\\\"P\\\":null,\\\"b\\\":\\\"xPy8vw1RMOGcdY66qvf4G\\\",\\\"c\\\":[\\\"\\\",\\\"\\\"],\\\"q\\\":\\\"\\\",\\\"i\\\":false,\\\"f\\\":[[[\\\"\\\",{\\\"children\\\":[\\\"__PAGE__\\\",{}]},\\\"$undefined\\\",\\\"$undefined\\\",true],[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/chunks/9819c8aa4c7528f0.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"script\\\",\\\"script-0\\\",{\\\"src\\\":\\\"/_next/static/chunks/7ef59da13d8da32d.js\\\",\\\"async\\\":true,\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"html\\\",null,{\\\"lang\\\":\\\"en\\\",\\\"children\\\":[\\\"$\\\",\\\"body\\\",null,{\\\"className\\\":\\\"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased\\\",\\\"children\\\":[[[\\\"$\\\",\\\"$L2\\\",null,{\\\"id\\\":\\\"init\\\",\\\"src\\\":\\\"/api/spider/bundle_fd1360b4fa59c098c3c1d64b37d424e7.js\\\",\\\"strategy\\\":\\\"beforeInteractive\\\"}],[\\\"$\\\",\\\"$L2\\\",null,{\\\"id\\\":\\\"run\\\",\\\"strategy\\\":\\\"afterInteractive\\\",\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"\\\\n            if (typeof aclib !== 'undefined') {\\\\n              aclib.runPop({\\\\n                zoneId: '10462622',\\\\n              });\\\\n            }\\\\n          \\\"}}],[\\\"$\\\",\\\"$L2\\\",null,{\\\"defer\\\":true,\\\"data-domain\\\":\\\"spiderembed.top\\\",\\\"src\\\":\\\"https://a.watchfty.link/js/script.js\\\",\\\"strategy\\\":\\\"afterInteractive\\\"}]],[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":[[[\\\"$\\\",\\\"title\\\",null,{\\\"children\\\":\\\"404: This page could not be found.\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"fontFamily\\\":\\\"system-ui,\\\\\\\"Segoe UI\\\\\\\",Roboto,Helvetica,Arial,sans-serif,\\\\\\\"Apple Color Emoji\\\\\\\",\\\\\\\"Segoe UI Emoji\\\\\\\"\\\",\\\"height\\\":\\\"100vh\\\",\\\"textAlign\\\":\\\"center\\\",\\\"display\\\":\\\"flex\\\",\\\"flexDirection\\\":\\\"column\\\",\\\"alignItems\\\":\\\"center\\\",\\\"justifyContent\\\":\\\"center\\\"},\\\"children\\\":[\\\"$\\\",\\\"div\\\",null,{\\\"children\\\":[[\\\"$\\\",\\\"style\\\",null,{\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\\\"}}],[\\\"$\\\",\\\"h1\\\",null,{\\\"className\\\":\\\"next-error-h1\\\",\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\",\\\"margin\\\":\\\"0 20px 0 0\\\",\\\"padding\\\":\\\"0 23px 0 0\\\",\\\"fontSize\\\":24,\\\"fontWeight\\\":500,\\\"verticalAlign\\\":\\\"top\\\",\\\"lineHeight\\\":\\\"49px\\\"},\\\"children\\\":404}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\"},\\\"children\\\":[\\\"$\\\",\\\"h2\\\",null,{\\\"style\\\":{\\\"fontSize\\\":14,\\\"fontWeight\\\":400,\\\"lineHeight\\\":\\\"49px\\\",\\\"margin\\\":0},\\\"children\\\":\\\"This page could not be found.\\\"}]}]]}]}]],[]],\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}]}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[\\\"$\\\",\\\"div\\\",null,{\\\"className\\\":\\\"p-5\\\",\\\"children\\\":[\\\"$\\\",\\\"pre\\\",null,{\\\"children\\\":\\\"{\\\\n  \\\\\\\"name\\\\\\\": \\\\\\\"Spider - Embed\\\\\\\",\\\\n  \\\\\\\"version\\\\\\\": \\\\\\\"1.0.0\\\\\\\"\\\\n}\\\"}]}],null,[\\\"$\\\",\\\"$L5\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$6\\\",null,{\\\"name\\\":\\\"Next.MetadataOutlet\\\",\\\"children\\\":\\\"$@7\\\"}]}]]}],{},null,false,false]},null,false,false],[\\\"$\\\",\\\"$1\\\",\\\"h\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L8\\\",null,{\\\"children\\\":\\\"$@9\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"hidden\\\":true,\\\"children\\\":[\\\"$\\\",\\\"$La\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$6\\\",null,{\\\"name\\\":\\\"Next.Metadata\\\",\\\"children\\\":\\\"$@b\\\"}]}]}],[\\\"$\\\",\\\"meta\\\",null,{\\\"name\\\":\\\"next-size-adjust\\\",\\\"content\\\":\\\"\\\"}]]}],false]],\\\"m\\\":\\\"$undefined\\\",\\\"G\\\":[\\\"$c\\\",[]],\\\"S\\\":true}\\n\"])</script><script>self.__next_f.push([1,\"9:[[\\\"$\\\",\\\"meta\\\",\\\"0\\\",{\\\"charSet\\\":\\\"utf-8\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"viewport\\\",\\\"content\\\":\\\"width=device-width, initial-scale=1\\\"}]]\\n\"])</script><script>self.__next_f.push([1,\"b:[[\\\"$\\\",\\\"title\\\",\\\"0\\\",{\\\"children\\\":\\\"Spider Embed\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"description\\\",\\\"content\\\":\\\"Embed\\\"}],[\\\"$\\\",\\\"link\\\",\\\"2\\\",{\\\"rel\\\":\\\"manifest\\\",\\\"href\\\":\\\"/manifest.webmanifest\\\",\\\"crossOrigin\\\":\\\"$undefined\\\"}]]\\n7:null\\n\"])</script></body></html>",
+        "error": null
+      }
+    },
+    {
+      "probe_name": "spider_api_root",
+      "path": "EMBED:/api",
+      "note": "api health",
+      "result": {
+        "requested_url": "https://spiderembed.top/api",
+        "effective_url": "https://spiderembed.top/api",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:31:02.132891Z",
+        "status_code": 200,
+        "elapsed_seconds": 0.24853801727294922,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:31:01 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "Content-Encoding": "gzip",
+          "vary": "Accept-Encoding, rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=%2BBG2PHe5DBGP0lzauoNGoPoe1C2XryHW%2FiZAtlpOCetvNpDCcbnuN0kNdzBJj6ipLqcCU61B%2FiRcCqiDbnJGKXhFANedhVFVvFfSMfG3mw%3D%3D\"}]}",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89422abef00553-MAA"
+        },
+        "response_json": {
+          "status": "up and running",
+          "timestamp": "2025-12-04T06:31:01.707Z"
+        },
+        "response_text": null,
+        "error": null
+      }
+    },
+    {
+      "probe_name": "spider_api_get",
+      "path": "EMBED:/api/get",
+      "note": "requires id or url param; often requires Referer",
+      "result": {
+        "requested_url": "https://spiderembed.top/api/get",
+        "effective_url": "https://spiderembed.top/api/get",
+        "params": {},
+        "headers": {},
+        "timestamp": "2025-12-04T06:31:02.882217Z",
+        "status_code": 404,
+        "elapsed_seconds": 0.2624950408935547,
+        "response_headers": {
+          "Date": "Thu, 04 Dec 2025 06:31:02 GMT",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "alt-svc": "h3=\":443\"; ma=86400",
+          "Content-Encoding": "gzip",
+          "vary": "Accept-Encoding, rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "cf-cache-status": "DYNAMIC",
+          "Nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+          "Report-To": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=Yl1r%2BgoWiL0tQ229q3sSovLdSMmq%2FdwNlKxF0mXOr8UD3ETx%2BdtqAfjIGZk8lzPy4Vu08tSyqNHjK7LG7aIifgUHuBZjO2Si3aFzBLvJrw%3D%3D\"}]}",
+          "Server": "cloudflare",
+          "CF-RAY": "9a89422f6b2c0553-MAA"
+        },
+        "response_json": null,
+        "response_text": "NOT_FOUND",
+        "error": null
+      }
+    }
+  ],
+  "finished_at": "2025-12-04T06:31:03.664362Z"
+}
