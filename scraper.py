@@ -14,7 +14,6 @@ Notes:
  - READ ONLY: script performs GET/HEAD requests only.
  - Resume support: use --resume to load existing output.
 """
-
 import argparse
 import json
 import time
@@ -185,7 +184,6 @@ def fetch_matches_for_sport(session, base_api, sport, timeout, rate_delay):
     Returns the safe_get probe object.
     """
     time.sleep(rate_delay)
-    # Try common patterns in order:
     candidates = [
         f"/api/v1/matches/{sport}",                    # existing assumption
         f"/api/v1/matches?sport={sport}",              # query param style
@@ -198,11 +196,9 @@ def fetch_matches_for_sport(session, base_api, sport, timeout, rate_delay):
         logger.debug("Trying matches URL: %s", url)
         probe = safe_get(session, url, timeout=timeout)
         last_probe = probe
-        # if we got a 200 and some content, return it
         if probe.get("status_code") == 200 and (probe.get("response_json") or probe.get("response_text")):
             probe["attempted_path"] = path
             return probe
-    # fallback: return last probe (possibly error)
     return last_probe or {"requested_url": build_url(base_api, f"/api/v1/matches/{sport}"), "error": "no_probe_made"}
 
 def fetch_match_detail(session, base_api, match_id, timeout, rate_delay):
@@ -216,7 +212,9 @@ def process_match(session, base_api, embed_host, m_basic, timeout, rate_delay, r
     resolve streams (SpiderEmbed) with a short timeout.
     Returns enriched match object.
     """
-    match_id = m_basic.get("matchId") or m_basic.get("id") or m_basic.get("match_id")
+    match_id = None
+    if isinstance(m_basic, dict):
+        match_id = m_basic.get("matchId") or m_basic.get("id") or m_basic.get("match_id")
     out = {"basic": m_basic, "match_probe": None, "poster_probe": None, "team_logos": {}, "league_logo": None, "embed_resolutions": [], "match_id": match_id}
     if not match_id:
         out["error"] = "missing_match_id"
@@ -227,7 +225,7 @@ def process_match(session, base_api, embed_host, m_basic, timeout, rate_delay, r
     r = safe_get(session, match_url, timeout=timeout)
     out["match_probe"] = r
 
-    # prefer IDs from either basic or match detail
+    # poster id
     poster_id = None
     if isinstance(m_basic, dict):
         poster_id = m_basic.get("poster") or m_basic.get("posterId") or m_basic.get("poster_id")
@@ -267,12 +265,12 @@ def process_match(session, base_api, embed_host, m_basic, timeout, rate_delay, r
         if check_images:
             out["league_logo"]["head"] = safe_head(session, ll_url, timeout=min(6, timeout))
 
-    # streams: check match detail 'streams' or basic streams
+    # streams
     streams = []
     if isinstance(match_json, dict):
-        streams = match_json.get("streams") or match_json.get("sources") or m_basic.get("streams") or []
+        streams = match_json.get("streams") or match_json.get("sources") or (m_basic.get("streams") if isinstance(m_basic, dict) else [])
     else:
-        streams = m_basic.get("streams") if isinstance(m_basic, dict) else []
+        streams = (m_basic.get("streams") if isinstance(m_basic, dict) else [])
 
     for s in streams:
         stream_url = None
@@ -321,9 +319,10 @@ def main():
 
     session = create_session(retries=args.retries, backoff=args.backoff)
     session.headers.update({"User-Agent": USER_AGENT})
-
     out_file = args.out_file
     existing = load_existing_output(out_file) if args.resume else None
+
+    # base skeleton
     output = {
         "scanned_at": now_iso(),
         "base_api": args.base_api,
@@ -335,8 +334,9 @@ def main():
     processed_match_ids = set()
     if existing:
         logger.info("Resuming from existing output: %s", out_file)
+        # keep existing full blob, but ensure we still update scanned_at etc.
         output = existing
-        # collect already processed match ids to skip
+        # gather processed match ids
         for sport_block in output.get("matches", {}).values():
             items = sport_block.get("items", [])
             for it in items:
@@ -361,9 +361,9 @@ def main():
             output["sports"] = sports
         else:
             logger.warning("Sports endpoint returned no JSON. response_text head: %s", (sres.get("response_text") or "")[:500])
-            output["errors"].append({"stage":"sports","detail":sres})
+            output.setdefault("errors", []).append({"stage":"sports","detail":sres})
 
-        # derive candidate slugs robustly: prefer slug -> id -> name
+        # derive candidate slugs robustly: prefer slug -> id -> name -> key
         slugs = []
         if args.sports:
             slugs = args.sports
@@ -398,6 +398,7 @@ def main():
                     items = js["matches"]
                     sample = {"type":"dict_with_matches","len":len(items), "head": items[:3]}
                 else:
+                    # treat the dict itself as a single match item
                     items = [js]
                     sample = {"type":"single_dict_wrapped","len":1, "keys": list(js.keys())[:10]}
             else:
@@ -405,8 +406,20 @@ def main():
                 sample = {"type":"unknown","repr": (mres.get("response_text") or "")[:300]}
 
             logger.info("Matches probe sample for %s: %s", sport, sample)
-            output.setdefault("matches", {})
-            output["matches"][sport] = {"probe": mres, "items": items if not existing else output["matches"].get(sport, {}).get("items", items)}
+
+            # Merge-on-resume: if we have existing output and it already contains items for this sport, keep them.
+            existing_items = None
+            if existing:
+                existing_items = output.get("matches", {}).get(sport, {}).get("items")
+                if existing_items and isinstance(existing_items, list) and len(existing_items) > 0:
+                    # Keep existing items, but log counts and still store the fresh probe for diagnostics
+                    logger.info("Keeping %d existing items for sport %s (probe returned %d)", len(existing_items), sport, len(items))
+                    output.setdefault("matches", {})[sport] = {"probe": mres, "items": existing_items}
+                else:
+                    # No existing items -> use fresh items (even if empty)
+                    output.setdefault("matches", {})[sport] = {"probe": mres, "items": items}
+            else:
+                output.setdefault("matches", {})[sport] = {"probe": mres, "items": items}
 
         # 3) prepare list of all basic match objects to process (skip already processed)
         to_process = []
@@ -416,6 +429,7 @@ def main():
                 mid = None
                 if isinstance(m, dict):
                     mid = m.get("matchId") or m.get("id") or m.get("match_id")
+                # if no id but dict-like, still process (process_match will mark missing)
                 if mid and str(mid) in processed_match_ids:
                     continue
                 to_process.append((sport, m))
