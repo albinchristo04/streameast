@@ -4,23 +4,15 @@ scraper.py
 
 Concurrent, robust WatchFooty + SpiderEmbed extractor.
 
-Key improvements over previous version:
- - Concurrent fetching of match details (configurable --workers)
- - By default does NOT download image binaries (only records image endpoints).
-   Use --check-images to run cheap HEAD probes to verify images exist (fast).
- - Resume support: if output file exists, script loads it and continues.
- - Writes incremental results after each match processed.
- - Better logging, retry/backoff, configurable timeouts and workers.
-
 Usage:
   pip install requests tqdm urllib3
   python scraper.py --base https://api.watchfooty.st --embed https://spiderembed.top \
       --out watchfooty_full.json --referer "https://www.watchfooty.st" --rate 0.4 \
-      --timeout 15 --retries 2 --backoff 0.3 --workers 12 --check-images
+      --timeout 15 --retries 2 --backoff 0.3 --workers 12 --check-images --resume
 
 Notes:
  - READ ONLY: script performs GET/HEAD requests only.
- - Use responsibly and respect rate limits / terms of service.
+ - Resume support: use --resume to load existing output.
 """
 
 import argparse
@@ -38,7 +30,7 @@ try:
     from requests.exceptions import RequestException
     from urllib3.util import Retry
     from requests.adapters import HTTPAdapter
-except Exception as e:
+except Exception:
     print("Please install required libraries: pip install requests tqdm urllib3", file=sys.stderr)
     raise
 
@@ -57,6 +49,8 @@ def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 def build_url(base, path):
+    if not base:
+        return path
     if path.startswith("http://") or path.startswith("https://"):
         return path
     return urljoin(base.rstrip("/") + "/", path.lstrip("/"))
@@ -186,9 +180,30 @@ def resolve_spider_embed(session, embed_host, stream_url, referer=None, timeout=
     return res
 
 def fetch_matches_for_sport(session, base_api, sport, timeout, rate_delay):
-    matches_url = build_url(base_api, f"/api/v1/matches/{sport}")
+    """
+    More tolerant fetching: try multiple common endpoint shapes.
+    Returns the safe_get probe object.
+    """
     time.sleep(rate_delay)
-    return safe_get(session, matches_url, timeout=timeout)
+    # Try common patterns in order:
+    candidates = [
+        f"/api/v1/matches/{sport}",                    # existing assumption
+        f"/api/v1/matches?sport={sport}",              # query param style
+        f"/api/v1/sports/{sport}/matches",             # alternate nested style
+        f"/api/v1/matches?league={sport}",             # sometimes 'league' used
+    ]
+    last_probe = None
+    for path in candidates:
+        url = build_url(base_api, path)
+        logger.debug("Trying matches URL: %s", url)
+        probe = safe_get(session, url, timeout=timeout)
+        last_probe = probe
+        # if we got a 200 and some content, return it
+        if probe.get("status_code") == 200 and (probe.get("response_json") or probe.get("response_text")):
+            probe["attempted_path"] = path
+            return probe
+    # fallback: return last probe (possibly error)
+    return last_probe or {"requested_url": build_url(base_api, f"/api/v1/matches/{sport}"), "error": "no_probe_made"}
 
 def fetch_match_detail(session, base_api, match_id, timeout, rate_delay):
     time.sleep(rate_delay)
@@ -213,11 +228,9 @@ def process_match(session, base_api, embed_host, m_basic, timeout, rate_delay, r
     out["match_probe"] = r
 
     # prefer IDs from either basic or match detail
-    # poster id
     poster_id = None
     if isinstance(m_basic, dict):
         poster_id = m_basic.get("poster") or m_basic.get("posterId") or m_basic.get("poster_id")
-    # also check match detail body
     match_json = r.get("response_json") or {}
     if not poster_id and isinstance(match_json, dict):
         poster_id = match_json.get("poster") or match_json.get("posterId") or match_json.get("poster_id")
@@ -327,11 +340,9 @@ def main():
         for sport_block in output.get("matches", {}).values():
             items = sport_block.get("items", [])
             for it in items:
-                # if we have 'match_id' field in enriched entry
                 if isinstance(it, dict) and it.get("match_id"):
                     processed_match_ids.add(str(it.get("match_id")))
                 else:
-                    # fallback: check basic.matchId
                     basic = it.get("basic") if isinstance(it, dict) else None
                     if isinstance(basic, dict):
                         mid = basic.get("matchId") or basic.get("id") or basic.get("match_id")
@@ -345,23 +356,56 @@ def main():
         sres = safe_get(session, sports_url, timeout=args.timeout)
         output["sports_probe"] = sres
         sports = []
-        if sres.get("response_json") and isinstance(sres["response_json"], list):
+        if sres.get("response_json"):
             sports = sres["response_json"]
             output["sports"] = sports
         else:
+            logger.warning("Sports endpoint returned no JSON. response_text head: %s", (sres.get("response_text") or "")[:500])
             output["errors"].append({"stage":"sports","detail":sres})
-        slugs = args.sports if args.sports else [s.get("name") for s in sports if s.get("name")]
+
+        # derive candidate slugs robustly: prefer slug -> id -> name
+        slugs = []
+        if args.sports:
+            slugs = args.sports
+        else:
+            if isinstance(sports, list):
+                for s in sports:
+                    if not isinstance(s, dict):
+                        continue
+                    candidate = s.get("slug") or s.get("id") or s.get("name") or s.get("key")
+                    if candidate:
+                        slugs.append(str(candidate))
+            else:
+                logger.warning("Unexpected sports format: %s", type(sports))
+
+        logger.info("Resolved %d sport slugs to query: %s", len(slugs), slugs)
 
         # 2) fetch matches per sport (sequential; each returned block will be processed concurrently)
         logger.info("Fetching matches for %d sports...", len(slugs))
         for sport in slugs:
             logger.info("Fetching matches for sport: %s", sport)
             mres = fetch_matches_for_sport(session, args.base_api, sport, timeout=args.timeout, rate_delay=args.rate_delay)
+            js = mres.get("response_json")
+            sample = None
+            if isinstance(js, list):
+                sample = {"type":"list","len":len(js), "head": js[:3]}
+                items = js
+            elif isinstance(js, dict):
+                if "items" in js and isinstance(js["items"], list):
+                    items = js["items"]
+                    sample = {"type":"dict_with_items","len":len(items), "head": items[:3]}
+                elif "matches" in js and isinstance(js["matches"], list):
+                    items = js["matches"]
+                    sample = {"type":"dict_with_matches","len":len(items), "head": items[:3]}
+                else:
+                    items = [js]
+                    sample = {"type":"single_dict_wrapped","len":1, "keys": list(js.keys())[:10]}
+            else:
+                items = []
+                sample = {"type":"unknown","repr": (mres.get("response_text") or "")[:300]}
+
+            logger.info("Matches probe sample for %s: %s", sport, sample)
             output.setdefault("matches", {})
-            # if res returned a list, populate items; if already present from resume keep existing items list
-            items = []
-            if mres.get("response_json") and isinstance(mres["response_json"], list):
-                items = mres["response_json"]
             output["matches"][sport] = {"probe": mres, "items": items if not existing else output["matches"].get(sport, {}).get("items", items)}
 
         # 3) prepare list of all basic match objects to process (skip already processed)
@@ -369,7 +413,9 @@ def main():
         for sport, block in output.get("matches", {}).items():
             items = block.get("items") or []
             for m in items:
-                mid = m.get("matchId") or m.get("id") or m.get("match_id")
+                mid = None
+                if isinstance(m, dict):
+                    mid = m.get("matchId") or m.get("id") or m.get("match_id")
                 if mid and str(mid) in processed_match_ids:
                     continue
                 to_process.append((sport, m))
@@ -390,7 +436,6 @@ def main():
                 except Exception as e:
                     logger.exception("Exception processing match: %s", e)
                     enriched = {"basic": basic, "error": str(e)}
-                # append to output (find right sport block)
                 output.setdefault("matches", {})
                 output.setdefault("matches", {}).setdefault(sport, {"probe": output["matches"].get(sport, {}).get("probe"), "items": output["matches"].get(sport, {}).get("items", [])})
                 output["matches"][sport]["items"].append(enriched)
