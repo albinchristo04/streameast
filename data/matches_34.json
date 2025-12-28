@@ -1,0 +1,82 @@
+{
+  "metadata": {
+    "extracted_at": "2025-12-28T06:31:43.208288",
+    "sport": "football",
+    "date_filter": null,
+    "league_filter": null
+  },
+  "sports": [
+    {
+      "name": "football",
+      "displayName": "Football",
+      "cutoffDate": "2023-05-10T00:00:00"
+    },
+    {
+      "name": "hockey",
+      "displayName": "Hockey",
+      "cutoffDate": "2025-04-18T00:00:00"
+    },
+    {
+      "name": "baseball",
+      "displayName": "Baseball",
+      "cutoffDate": "2025-04-18T00:00:00"
+    },
+    {
+      "name": "basketball",
+      "displayName": "Basketball",
+      "cutoffDate": "2025-04-18T00:00:00"
+    },
+    {
+      "name": "racing",
+      "displayName": "Racing",
+      "cutoffDate": "2025-04-18T00:00:00"
+    },
+    {
+      "name": "fighting",
+      "displayName": "Fighting",
+      "cutoffDate": "2025-05-17T00:00:00"
+    },
+    {
+      "name": "rugby",
+      "displayName": "Rugby",
+      "cutoffDate": "2025-05-03T00:00:00"
+    },
+    {
+      "name": "tennis",
+      "displayName": "Tennis",
+      "cutoffDate": "2025-06-02T00:00:00"
+    },
+    {
+      "name": "cricket",
+      "displayName": "Cricket",
+      "cutoffDate": "2025-06-16T00:00:00"
+    },
+    {
+      "name": "volleyball",
+      "displayName": "Volleyball",
+      "cutoffDate": "2025-07-15T00:00:00"
+    },
+    {
+      "name": "american-football",
+      "displayName": "American Football",
+      "cutoffDate": "2025-07-02T00:00:00"
+    },
+    {
+      "name": "australian-football",
+      "displayName": "Australian Football",
+      "cutoffDate": "2025-08-06T00:00:00"
+    },
+    {
+      "name": "darts",
+      "displayName": "Darts",
+      "cutoffDate": "2025-10-09T00:00:00"
+    },
+    {
+      "name": "golf",
+      "displayName": "Golf",
+      "cutoffDate": "2025-08-09T00:00:00"
+    }
+  ],
+  "leagues": null,
+  "matches": []
+}
